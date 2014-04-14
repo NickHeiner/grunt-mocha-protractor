@@ -8,12 +8,10 @@
 module.exports = function(grunt) {
   grunt.registerMultiTask('mochaProtractor', 'Run e2e angular tests with webdriver.', function() {
 
-    var protractor = require('protractor'),
-        _ = require('lodash'),
+    var _ = require('lodash'),
         path = require('path'),
         fork = require('child_process').fork,
         q = require('q'),
-        reporter = require('../lib/reporter'),
 
         files = this.files,
         options = this.options({
@@ -34,9 +32,6 @@ module.exports = function(grunt) {
         done = this.async(),
         testRunPromises;
 
-    // wrap reporter
-    options.reporter = reporter(options.reporter);
-
     testRunPromises = _.map(options.browsers, function(browser) {
       return _.map(files, function(fileGroup) {
         var expandedFiles = grunt.file.expand({filter: 'isFile'}, fileGroup.src),
@@ -51,6 +46,7 @@ module.exports = function(grunt) {
         forked.on('close', function(code) {
           if (code !== 0) {
             deferred.resolve();
+            return;
           }
 
           deferred.reject(code);
