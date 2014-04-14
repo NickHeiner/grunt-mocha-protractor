@@ -11,6 +11,7 @@ module.exports = function(grunt) {
     var _ = require('lodash'),
         path = require('path'),
         fork = require('child_process').fork,
+        getMochaTestTitles = require('../lib/get-mocha-test-titles'),
         q = require('q'),
 
         files = this.files,
@@ -34,17 +35,19 @@ module.exports = function(grunt) {
 
     testRunPromises = _.map(options.browsers, function(browser) {
       return _.map(files, function(fileGroup) {
-        var preTestFiles = grunt.file.expand({filter: 'isFile'}, options.preTestFiles),
-            expandedFiles = grunt.file.expand({filter: 'isFile'}, fileGroup.src);
+        var expandedFiles = grunt.file.expand({filter: 'isFile'}, fileGroup.src),
+            testTitles = getMochaTestTitles(expandedFiles);
 
-        return _.map([expandedFiles[0], expandedFiles[15]], function (testFile) {
+        return _.map(testTitles.slice(0, 10), function (testTitle) {
 
-          console.log('forking for', testFile);
+          console.log('forking for', testTitle);
 
-          var filesToRun = preTestFiles.concat([testFile]),
-              deferred = q.defer(),
+          // We will have to find a better solution for grep later.
+          options.grep = testTitle;
+
+          var deferred = q.defer(),
               pathToRunMochaModule = path.join(__dirname, '..', 'lib', 'run-mocha.js'),
-              rawArgs = [filesToRun, browser, options],
+              rawArgs = [expandedFiles, browser, options],
               serializedArgs = _.map(rawArgs, function (arg) {
                 // this will kill grep
                 // http://stackoverflow.com/questions/12075927/serialization-of-regexp
