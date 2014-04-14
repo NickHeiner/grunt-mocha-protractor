@@ -34,25 +34,35 @@ module.exports = function(grunt) {
 
     testRunPromises = _.map(options.browsers, function(browser) {
       return _.map(files, function(fileGroup) {
-        var expandedFiles = grunt.file.expand({filter: 'isFile'}, fileGroup.src),
-            deferred = q.defer(),
-            pathToRunMochaModule = path.join(__dirname, '..', 'lib', 'run-mocha.js'),
-            rawArgs = [expandedFiles, browser, options],
-            serializedArgs = _.map(rawArgs, function(arg) {
-              return JSON.stringify(arg);
-            }),
-            forked = fork(pathToRunMochaModule, serializedArgs);
+        var preTestFiles = grunt.file.expand({filter: 'isFile'}, options.preTestFiles),
+            expandedFiles = grunt.file.expand({filter: 'isFile'}, fileGroup.src);
 
-        forked.on('close', function(code) {
-          if (code !== 0) {
-            deferred.resolve();
-            return;
-          }
+        return _.map([expandedFiles[15]], function (testFile) {
 
-          deferred.reject(code);
+          console.log('forking for', testFile);
+
+          var filesToRun = preTestFiles.concat([testFile]),
+              deferred = q.defer(),
+              pathToRunMochaModule = path.join(__dirname, '..', 'lib', 'run-mocha.js'),
+              rawArgs = [filesToRun, browser, options],
+              serializedArgs = _.map(rawArgs, function (arg) {
+                // this will kill grep
+                // http://stackoverflow.com/questions/12075927/serialization-of-regexp
+                return JSON.stringify(arg);
+              }),
+              forked = fork(pathToRunMochaModule, serializedArgs);
+
+          forked.on('close', function (code) {
+            if (code === 0) {
+              deferred.resolve();
+              return;
+            }
+
+            deferred.reject(code);
+          });
+
+          return deferred.promise;
         });
-
-        return deferred.promise;
       });
     });
 
