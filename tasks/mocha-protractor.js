@@ -37,7 +37,7 @@ module.exports = function(grunt) {
         var preTestFiles = grunt.file.expand({filter: 'isFile'}, options.preTestFiles),
             expandedFiles = grunt.file.expand({filter: 'isFile'}, fileGroup.src);
 
-        return _.map([expandedFiles[15]], function (testFile) {
+        return _.map([expandedFiles[0], expandedFiles[15]], function (testFile) {
 
           console.log('forking for', testFile);
 
