@@ -25,7 +25,10 @@
   "dependencies": {
     "mocha": "~1.17.1",
     "protractor": "~0.18.1",
-    "expect.js": "~0.2.0"
+    "expect.js": "~0.2.0",
+    "glob": "^3.2.9",
+    "q": "^1.0.1",
+    "lodash": "^2.4.1"
   },
   "devDependencies": {
     "grunt-contrib-jshint": "~0.8.0",

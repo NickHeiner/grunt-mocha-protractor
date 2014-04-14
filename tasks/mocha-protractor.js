@@ -5,17 +5,17 @@
 
 'use strict';
 
-var protractor = require('protractor'),
-    runner = require('../lib/runner'),
-    reporter = require('../lib/reporter'),
-    Mocha = require('mocha'),
-    path = require('path'),
-    Module = require('module'),
-    expect = require('expect.js');
-
 module.exports = function(grunt) {
   grunt.registerMultiTask('mochaProtractor', 'Run e2e angular tests with webdriver.', function() {
-    var files = this.files,
+
+    var protractor = require('protractor'),
+        _ = require('lodash'),
+        path = require('path'),
+        fork = require('child_process').fork,
+        q = require('q'),
+        reporter = require('../lib/reporter'),
+
+        files = this.files,
         options = this.options({
           browsers: ['Chrome'],
           reporter: 'Spec',
@@ -30,15 +30,46 @@ module.exports = function(grunt) {
           baseUrl: '',
           rootElement: '',
           params: {}
-        });
+        }),
+        done = this.async(),
+        testRunPromises;
 
     // wrap reporter
     options.reporter = reporter(options.reporter);
 
-    grunt.util.async.forEachSeries(options.browsers, function(browser, next) {
-      grunt.util.async.forEachSeries(files, function(fileGroup, next) {
-        runner(grunt, fileGroup, browser, options, next);
-      }, next);
-    }, this.async());
+    testRunPromises = _.map(options.browsers, function(browser) {
+      return _.map(files, function(fileGroup) {
+        var expandedFiles = grunt.file.expand({filter: 'isFile'}, fileGroup.src),
+            deferred = q.defer(),
+            pathToRunMochaModule = path.join(__dirname, '..', 'lib', 'run-mocha.js'),
+            rawArgs = [expandedFiles, browser, options],
+            serializedArgs = _.map(rawArgs, function(arg) {
+              return JSON.stringify(arg);
+            }),
+            forked = fork(pathToRunMochaModule, serializedArgs);
+
+        forked.on('close', function(code) {
+          if (code !== 0) {
+            deferred.resolve();
+          }
+
+          deferred.reject(code);
+        });
+
+        return deferred.promise;
+      });
+    });
+
+    q.all(_.flatten(testRunPromises))
+        .then(done)
+        .fail(function(err) {
+          done(new Error(err));
+        });
+
+//    grunt.util.async.forEachSeries(options.browsers, function(browser, next) {
+//      grunt.util.async.forEachSeries(files, function(fileGroup, next) {
+//        runner(fileGroup, browser, options, next);
+//      }, next);
+//    }, this.async());
   });
 };
