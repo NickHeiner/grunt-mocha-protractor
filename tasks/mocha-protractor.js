@@ -60,7 +60,7 @@ module.exports = function(grunt) {
     throttleFork(_.flatten(forks))
         .then(done)
         .fail(function(err) {
-          done(new Error(err));
+          done(new Error('Forked mocha processes exited with status codes: ' + err));
         });
 
   });
