@@ -10,6 +10,7 @@ module.exports = function(grunt) {
 
     var _ = require('lodash'),
         path = require('path'),
+        partition = require('../lib/partition'),
         throttleFork = require('../lib/throttle-fork'),
         getMochaTestTitles = require('../lib/get-mocha-test-titles'),
         q = require('q'),
@@ -34,12 +35,13 @@ module.exports = function(grunt) {
         forks = _.map(options.browsers, function(browser) {
           return _.map(files, function(fileGroup) {
             var expandedFiles = grunt.file.expand({filter: 'isFile'}, fileGroup.src),
-                testTitles = getMochaTestTitles(expandedFiles);
+                testTitles = getMochaTestTitles(expandedFiles),
+                partitionedTestTitles = partition(testTitles, 10);
 
-            return _.map(testTitles, function (testTitle) {
+            return _.map(partitionedTestTitles, function (testTitles) {
 
               // We will have to find a better solution for grep later.
-              options.grep = testTitle;
+              options.grep = testTitles.join('\|');
 
               var pathToRunMochaModule = path.join(__dirname, '..', 'lib', 'run-mocha.js'),
                   rawArgs = [expandedFiles, browser, options],
@@ -52,7 +54,7 @@ module.exports = function(grunt) {
               return {
                 moduleToRun: pathToRunMochaModule,
                 args: serializedArgs,
-                grep: testTitle
+                grep: options.grep
               };
             });
           });
