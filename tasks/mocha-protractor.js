@@ -29,14 +29,25 @@ module.exports = function(grunt) {
           // protractor config
           baseUrl: '',
           rootElement: '',
-          params: {}
+          params: {},
+
+          testPartitionSize: 20,
+          throttleFactor: 1
         }),
         done = this.async(),
         forks = _.map(options.browsers, function(browser) {
           return _.map(files, function(fileGroup) {
             var expandedFiles = grunt.file.expand({filter: 'isFile'}, fileGroup.src),
                 testTitles = getMochaTestTitles(expandedFiles),
-                partitionedTestTitles = partition(testTitles, 10);
+
+                /**
+                 * The selenium server seems to have some issue where it will only give
+                 * out so many sessions before hanging and being entirely unresponsive,
+                 * even to hitting it via curl or the browser. To get around that,
+                 * let's just limit the number of different sessions we need by running
+                 * more tests in each fork. This unfortunately reduces parallelism.
+                 */
+                partitionedTestTitles = partition(testTitles, options.testPartitionSize);
 
             return _.map(partitionedTestTitles, function (testTitles) {
 
@@ -65,7 +76,7 @@ module.exports = function(grunt) {
 
     // If we don't throttle it and just fork 150+ node processes at once,
     // the machine may become sad.
-    throttleFork(flattenedForks, 1/4)
+    throttleFork(flattenedForks, options.throttleFactor)
         .then(done)
         .fail(function(err) {
           done(new Error('Forked mocha processes exited with status codes: ' + err));
