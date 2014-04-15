@@ -36,7 +36,7 @@ module.exports = function(grunt) {
             var expandedFiles = grunt.file.expand({filter: 'isFile'}, fileGroup.src),
                 testTitles = getMochaTestTitles(expandedFiles);
 
-            return _.map(testTitles.slice(35), function (testTitle) {
+            return _.map(testTitles, function (testTitle) {
 
               // We will have to find a better solution for grep later.
               options.grep = testTitle;
@@ -63,7 +63,7 @@ module.exports = function(grunt) {
 
     // If we don't throttle it and just fork 150+ node processes at once,
     // the machine may become sad.
-    throttleFork(flattenedForks, 1/8)
+    throttleFork(flattenedForks, 1/4)
         .then(done)
         .fail(function(err) {
           done(new Error('Forked mocha processes exited with status codes: ' + err));
