@@ -51,7 +51,8 @@ module.exports = function(grunt) {
 
               return {
                 moduleToRun: pathToRunMochaModule,
-                args: serializedArgs
+                args: serializedArgs,
+                grep: testTitle
               };
             });
           });
@@ -60,7 +61,9 @@ module.exports = function(grunt) {
 
     grunt.log.ok('Forking `' + flattenedForks.length + '` subprocesses');
 
-    throttleFork(flattenedForks, .5)
+    // If we don't throttle it and just fork 150+ node processes at once,
+    // the machine may become sad.
+    throttleFork(flattenedForks, 1/8)
         .then(done)
         .fail(function(err) {
           done(new Error('Forked mocha processes exited with status codes: ' + err));
