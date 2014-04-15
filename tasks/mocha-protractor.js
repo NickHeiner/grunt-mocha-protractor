@@ -17,7 +17,7 @@ module.exports = function(grunt) {
         files = this.files,
         options = this.options({
           browsers: ['Chrome'],
-          reporter: 'Spec',
+          reporter: 'List',
           args: null,
           seleniumUrl: 'http://localhost:4444/wd/hub',
 
@@ -36,7 +36,7 @@ module.exports = function(grunt) {
             var expandedFiles = grunt.file.expand({filter: 'isFile'}, fileGroup.src),
                 testTitles = getMochaTestTitles(expandedFiles);
 
-            return _.map(testTitles.slice(0, 4), function (testTitle) {
+            return _.map(testTitles.slice(0, 50), function (testTitle) {
 
               // We will have to find a better solution for grep later.
               options.grep = testTitle;
@@ -55,9 +55,11 @@ module.exports = function(grunt) {
               };
             });
           });
-        });
+        }),
+        flattenedForks = _.flatten(forks);
 
-    throttleFork(_.flatten(forks))
+    grunt.log.ok('Forking `' + flattenedForks.length + '` subprocesses');
+    throttleFork(flattenedForks)
         .then(done)
         .fail(function(err) {
           done(new Error('Forked mocha processes exited with status codes: ' + err));
